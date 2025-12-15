@@ -1,0 +1,1709 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>교실 메타버스</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            overflow: hidden;
+            background: #2c3e50;
+        }
+        
+        /* 로그인 화면 */
+        #loginScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        #loginBox {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        #loginBox h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 25px;
+            font-size: 24px;
+        }
+        
+        .input-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .input-row .input-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #555;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        #emojiContainer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 15px;
+        }
+        
+        .emoji-option {
+            font-size: 52px;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 4px solid #e0e0e0;
+            border-radius: 12px;
+            transition: all 0.2s;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            user-select: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .emoji-option:hover {
+            transform: scale(1.05);
+            border-color: #bbb;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .emoji-option.selected {
+            border-color: #667eea;
+            border-width: 5px;
+            background: linear-gradient(135deg, #e7e9fc 0%, #d4d7f7 100%);
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        #randomEmojiBtn {
+            font-size: 45px;
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #667eea 0%, #5568d3 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        }
+        
+        #randomEmojiBtn:hover {
+            background: linear-gradient(135deg, #5568d3 0%, #4557c2 100%);
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        #randomEmojiBtn:active {
+            transform: scale(0.95);
+        }
+        
+        #emojiSelector {
+            display: none;
+        }
+        
+        #loginBtn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        
+        #loginBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        #loginBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* 게임 화면 */
+        #gameScreen {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #gameContainer {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 75%;
+            height: 100%;
+            overflow: auto;
+            background: #2c3e50;
+        }
+        
+        #gameCanvas {
+            display: block;
+            background: #e0e0e0;
+            width: 1440px;
+            height: 1080px;
+        }
+        
+        /* 채팅 영역 */
+        #chatContainer {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 25%;
+            height: 100vh;
+            background: #1a1a1a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            border-left: 3px solid #667eea;
+            z-index: 100;
+        }
+        
+        #chatHeader {
+            background: #2a2a2a;
+            padding: 10px 15px;
+            border-bottom: 2px solid #667eea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        #chatHeader h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #667eea;
+        }
+        
+        #chatBody {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            overflow: hidden;
+        }
+        
+        #chatMessages {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            padding-right: 10px;
+        }
+        
+        .chat-message {
+            margin: 5px 0;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+        
+        #chatInputContainer {
+            display: flex;
+            gap: 10px;
+        }
+        
+        #chatInput {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        #chatSendBtn {
+            padding: 8px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        /* 교사 제어판 */
+        #teacherPanel {
+            display: none;
+            background: #2a2a2a;
+            color: white;
+            padding: 8px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        #teacherPanel h4 {
+            margin: 6px 0 4px 0;
+            font-size: 11px;
+            color: #ffd700;
+            text-align: center;
+        }
+        
+        .teacher-row {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 4px;
+        }
+        
+        .teacher-btn {
+            flex: 1;
+            padding: 5px 6px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        
+        .teacher-btn:hover {
+            background: #5568d3;
+        }
+        
+        .teacher-btn:active {
+            transform: scale(0.98);
+        }
+        }
+        
+        #teacherPanel h3 {
+            margin: 0 0 15px 0;
+            color: #ffd700;
+            text-align: center;
+        }
+        
+        .teacher-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .teacher-btn:hover {
+            background: #5568d3;
+        }
+        
+        .teacher-btn.active {
+            background: #ff4444;
+        }
+        
+        /* 게임 상태 표시 */
+        #gameStatus {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 30px 50px;
+            border-radius: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            display: none;
+            z-index: 100;
+        }
+        
+        /* 접속자 수 */
+        #userCount {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        /* 전체화면 버튼 */
+        #fullscreenBtn {
+            padding: 8px 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        #fullscreenBtn:hover {
+            background: #5568d3;
+            transform: scale(1.05);
+        }
+        
+        /* 조이스틱 - 마인크래프트 스타일 */
+        #joystick {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            width: 140px;
+            height: 140px;
+            z-index: 200;
+        }
+        
+        .joystick-base {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            display: grid;
+            grid-template-columns: 45px 50px 45px;
+            grid-template-rows: 45px 50px 45px;
+            gap: 0;
+        }
+        
+        .joystick-button {
+            background: linear-gradient(145deg, #4a4a4a, #2a2a2a);
+            border: 2px solid #1a1a1a;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.1s;
+            color: rgba(255, 255, 255, 0.8);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+            opacity: 0.5;
+        }
+        
+        .joystick-button:active {
+            background: linear-gradient(145deg, #3a3a3a, #1a1a1a);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), inset 0 2px 4px rgba(0, 0, 0, 0.5);
+            transform: translateY(2px);
+        }
+        
+        .joystick-up {
+            grid-column: 2;
+            grid-row: 1;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .joystick-down {
+            grid-column: 2;
+            grid-row: 3;
+            border-radius: 0 0 8px 8px;
+        }
+        
+        .joystick-left {
+            grid-column: 1;
+            grid-row: 2;
+            border-radius: 8px 0 0 8px;
+        }
+        
+        .joystick-right {
+            grid-column: 3;
+            grid-row: 2;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        /* 조이스틱 중앙 (장식용) */
+        .joystick-center {
+            grid-column: 2;
+            grid-row: 2;
+            background: linear-gradient(145deg, #3a3a3a, #1a1a1a);
+            border: 2px solid #1a1a1a;
+            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
+        }
+    </style>
+</head>
+<body>
+    <!-- 로그인 화면 -->
+    <div id="loginScreen">
+        <div id="loginBox">
+            <h1>🏫 교실 메타버스</h1>
+            
+            <div class="input-row">
+                <div class="input-group">
+                    <label>이름</label>
+                    <input type="text" id="nameInput" placeholder="이름을 입력하세요" maxlength="10">
+                </div>
+                
+                <div class="input-group">
+                    <label>비밀번호</label>
+                    <input type="password" id="passwordInput" placeholder="비밀번호를 입력하세요">
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label>캐릭터 선택</label>
+                <div id="emojiContainer">
+                    <div class="emoji-option" data-index="0">😀</div>
+                    <div class="emoji-option" data-index="1">😃</div>
+                    <div class="emoji-option" data-index="2">😄</div>
+                    <button id="randomEmojiBtn">🎲</button>
+                </div>
+                <div id="emojiSelector"></div>
+            </div>
+            
+            <button id="loginBtn" disabled>입장하기</button>
+        </div>
+    </div>
+    
+    <!-- 게임 화면 -->
+    <div id="gameScreen">
+        <div id="gameContainer">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+        
+        <!-- 조이스틱 -->
+        <div id="joystick">
+            <div class="joystick-base">
+                <div class="joystick-button joystick-up" data-direction="up">▲</div>
+                <div class="joystick-center"></div>
+                <div class="joystick-button joystick-down" data-direction="down">▼</div>
+                <div class="joystick-button joystick-left" data-direction="left">◀</div>
+                <div class="joystick-button joystick-right" data-direction="right">▶</div>
+            </div>
+        </div>
+        
+        <!-- 게임 상태 -->
+        <div id="gameStatus"></div>
+        
+        <!-- 채팅 -->
+        <div id="chatContainer">
+            <div id="chatHeader">
+                <h3 id="chatTitle">💬 채팅</h3>
+                <div style="display: flex; gap: 5px;">
+                    <button id="fullscreenBtn" title="전체화면">⛶</button>
+                </div>
+            </div>
+            
+            <!-- 교사 제어판 (채팅창 내부) -->
+            <div id="teacherPanel">
+                <div class="teacher-row">
+                    <button class="teacher-btn" id="announceBtn">📢 공지하기</button>
+                    <button class="teacher-btn" id="clearChatBtn">🗑️ 채팅 지우기</button>
+                </div>
+                <div class="teacher-row">
+                    <button class="teacher-btn" id="gatherStudentsBtn">👥 학생 모이기</button>
+                    <button class="teacher-btn" id="kickAllBtn">🚪 학생 내보내기</button>
+                </div>
+                <div class="teacher-row">
+                    <button class="teacher-btn" id="regenerateObstaclesBtn">🧱 장애물 재설치</button>
+                    <button class="teacher-btn" id="clearObstaclesBtn">🧹 장애물 지우기</button>
+                </div>
+                <h4>🎮 미니게임</h4>
+                <div class="teacher-row">
+                    <button class="teacher-btn" id="poopGameBtn">💩 똥 피하기</button>
+                    <button class="teacher-btn" id="zombieGameBtn">💀 좀비 게임</button>
+                </div>
+            </div>
+            
+            <div id="chatBody">
+                <div id="chatMessages"></div>
+                <div id="chatInputContainer">
+                    <input type="text" id="chatInput" placeholder="메시지를 입력하세요...">
+                    <button id="chatSendBtn">전송</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <script>
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyBiEjxmFOa2aq86KgARZo80SI_CzQwDxDo",
+            authDomain: "classroom-meta.firebaseapp.com",
+            databaseURL: "https://classroom-meta-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "classroom-meta",
+            storageBucket: "classroom-meta.firebasestorage.app",
+            messagingSenderId: "473991431124",
+            appId: "1:473991431124:web:dd12f53390bfb57786cc41"
+        };
+        
+        // Firebase 초기화
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        // 페이지 로드 시 kickAll 데이터 무조건 정리 (이전 세션의 잔여 데이터 제거)
+        database.ref('kickAll').once('value', (snapshot) => {
+            if (snapshot.exists()) {
+                database.ref('kickAll').remove();
+                console.log('이전 kickAll 데이터 정리됨');
+            }
+        });
+        
+        // 이모지 목록
+        const emojis = ['😀','😃','😄','😁','😆','😅','😂','🤣','☺️','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬'];
+        
+        // 비밀번호
+        const STUDENT_PASSWORD = '3300';
+        const TEACHER_PASSWORD = 'zzonji';
+        
+        // 전역 변수
+        let myUserId = null;
+        let myName = '';
+        let myEmoji = '';
+        let isTeacher = false;
+        let users = {};
+        let currentGame = null; // 'poop' or 'zombie'
+        let obstacles = []; // 장애물 배열
+        
+        // 사운드 시스템
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+        
+        const sounds = {
+            // 똥 피하기 게임 시작
+            poopStart: () => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.3);
+            },
+            
+            // 똥 맞음
+            poopHit: () => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.2);
+            },
+            
+            // 우승
+            win: () => {
+                [0, 0.1, 0.2].forEach((time, i) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    const freq = [523, 659, 784][i]; // C, E, G
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime + time);
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime + time);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + time + 0.3);
+                    
+                    osc.start(audioCtx.currentTime + time);
+                    osc.stop(audioCtx.currentTime + time + 0.3);
+                });
+            },
+            
+            // 좀비 게임 시작
+            zombieStart: () => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.5);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.5);
+            },
+            
+            // 좀비 감염
+            zombieInfect: () => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.15);
+            },
+            
+            // 공지 효과음
+            announce: () => {
+                // 종소리처럼 "딩동" 효과
+                [0, 0.15].forEach((time, i) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    const freq = i === 0 ? 800 : 600; // 높은음 → 낮은음
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime + time);
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime + time);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + time + 0.4);
+                    
+                    osc.start(audioCtx.currentTime + time);
+                    osc.stop(audioCtx.currentTime + time + 0.4);
+                });
+            },
+            
+            // 배경음 (게임 중)
+            ambience: () => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                
+                osc.start(audioCtx.currentTime);
+                return osc; // 멈출 수 있도록 반환
+            }
+        };
+        
+        // 사운드 재생 함수
+        function playSound(soundName) {
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                sounds[soundName]();
+            } catch (e) {
+                console.log('Sound error:', e);
+            }
+        }
+        
+        // Canvas 설정 (고정 크기)
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = 1440;
+        canvas.height = 1080;
+        
+        // 플레이어 초기 위치 (중앙)
+        let myPosition = {
+            x: canvas.width / 2,
+            y: canvas.height / 2
+        };
+        
+        const MOVE_SPEED = 5;
+        const keys = {};
+        
+        // 키보드 입력
+        window.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+        });
+        
+        window.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+        
+        // 로그인 화면 설정
+        const nameInput = document.getElementById('nameInput');
+        const passwordInput = document.getElementById('passwordInput');
+        const loginBtn = document.getElementById('loginBtn');
+        const emojiOptions = document.querySelectorAll('.emoji-option');
+        const randomEmojiBtn = document.getElementById('randomEmojiBtn');
+        let currentEmojis = [];
+        
+        // checkLoginReady 함수를 먼저 정의
+        function checkLoginReady() {
+            const ready = myName !== '' && myEmoji !== '' && passwordInput.value !== '';
+            loginBtn.disabled = !ready;
+        }
+        
+        // 3개의 랜덤 이모지 선택 함수
+        function selectRandomEmojis() {
+            const shuffled = [...emojis].sort(() => Math.random() - 0.5);
+            currentEmojis = shuffled.slice(0, 3);
+            
+            emojiOptions.forEach((option, index) => {
+                option.textContent = currentEmojis[index];
+                option.classList.remove('selected');
+            });
+            
+            // 첫 번째 캐릭터를 자동 선택
+            if (emojiOptions.length > 0) {
+                emojiOptions[0].classList.add('selected');
+                myEmoji = currentEmojis[0];
+            }
+            
+            checkLoginReady();
+        }
+        
+        // 초기 3개 랜덤 이모지 표시 및 첫 번째 자동 선택
+        selectRandomEmojis();
+        
+        // 이모지 옵션 클릭 이벤트
+        emojiOptions.forEach((option) => {
+            option.addEventListener('click', () => {
+                // 모든 선택 해제
+                emojiOptions.forEach(opt => opt.classList.remove('selected'));
+                
+                // 클릭한 것 선택
+                option.classList.add('selected');
+                myEmoji = option.textContent;
+                checkLoginReady();
+            });
+        });
+        
+        // 랜덤 선택 버튼 이벤트
+        randomEmojiBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            selectRandomEmojis();
+        });
+        
+        nameInput.addEventListener('input', (e) => {
+            myName = e.target.value.trim();
+            checkLoginReady();
+        });
+        
+        passwordInput.addEventListener('input', checkLoginReady);
+        
+        // 로그인
+        loginBtn.addEventListener('click', () => {
+            const password = passwordInput.value;
+            
+            if (password !== STUDENT_PASSWORD && password !== TEACHER_PASSWORD) {
+                alert('비밀번호가 올바르지 않습니다!');
+                return;
+            }
+            
+            isTeacher = (password === TEACHER_PASSWORD);
+            
+            // Firebase에 사용자 등록
+            myUserId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            
+            const userRef = database.ref('users/' + myUserId);
+            userRef.set({
+                name: myName,
+                emoji: myEmoji,
+                isTeacher: isTeacher,
+                x: myPosition.x,
+                y: myPosition.y,
+                timestamp: Date.now()
+            });
+            
+            // 연결 끊김 시 자동 삭제
+            userRef.onDisconnect().remove();
+            
+            // 로그인 화면 숨기고 게임 화면 표시
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
+            
+            // 채팅 제목 변경
+            if (isTeacher) {
+                document.getElementById('chatTitle').textContent = '👨‍🏫 선생님 버전';
+                document.getElementById('teacherPanel').style.display = 'block';
+            } else {
+                document.getElementById('chatTitle').textContent = '👦 학생 버전';
+            }
+            
+            // 게임 시작
+            startGame();
+        });
+        
+        // 게임 시작
+        function startGame() {
+            // 모든 사용자 데이터 실시간 동기화
+            database.ref('users').on('value', (snapshot) => {
+                users = snapshot.val() || {};
+                
+                // 내 위치가 서버에서 변경되었으면 로컬도 업데이트 (학생 모이기 등)
+                if (users[myUserId]) {
+                    myPosition.x = users[myUserId].x;
+                    myPosition.y = users[myUserId].y;
+                }
+                
+                updateUserCount();
+            });
+            
+            // 채팅 메시지 실시간 동기화
+            database.ref('chat').limitToLast(20).on('child_added', (snapshot) => {
+                const msg = snapshot.val();
+                addChatMessage(msg);
+            });
+            
+            // 채팅 전체 삭제 감지
+            database.ref('chat').on('value', (snapshot) => {
+                if (!snapshot.exists()) {
+                    // 채팅이 모두 삭제되었을 때
+                    document.getElementById('chatMessages').innerHTML = '';
+                }
+            });
+            
+            // 게임 상태 동기화
+            database.ref('game').on('value', (snapshot) => {
+                const gameData = snapshot.val();
+                if (gameData) {
+                    currentGame = gameData.type;
+                    if (gameData.type === 'poop') {
+                        startPoopGame(gameData);
+                    } else if (gameData.type === 'zombie') {
+                        startZombieGame(gameData);
+                    }
+                } else {
+                    currentGame = null;
+                    poops = [];
+                    zombies = {};
+                }
+            });
+            
+            // 장애물 동기화
+            let obstaclesInitialized = false;
+            database.ref('obstacles').on('value', (snapshot) => {
+                const obstaclesData = snapshot.val();
+                if (obstaclesData) {
+                    obstacles = obstaclesData;
+                    obstaclesInitialized = true;
+                } else {
+                    obstacles = [];
+                    // 교사만 장애물 초기 생성 (최초 1회만)
+                    if (isTeacher && !obstaclesInitialized) {
+                        generateObstacles();
+                        obstaclesInitialized = true;
+                    }
+                }
+            });
+            
+            // 게임 루프 시작
+            gameLoop();
+            
+            // 조이스틱 이벤트
+            const joystickButtons = document.querySelectorAll('.joystick-button');
+            joystickButtons.forEach(button => {
+                const direction = button.getAttribute('data-direction');
+                
+                // 터치 이벤트
+                button.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    keys[getKeyForDirection(direction)] = true;
+                });
+                
+                button.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    keys[getKeyForDirection(direction)] = false;
+                });
+                
+                // 마우스 이벤트 (PC에서도 클릭 가능)
+                button.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    keys[getKeyForDirection(direction)] = true;
+                });
+                
+                button.addEventListener('mouseup', (e) => {
+                    e.preventDefault();
+                    keys[getKeyForDirection(direction)] = false;
+                });
+                
+                button.addEventListener('mouseleave', (e) => {
+                    keys[getKeyForDirection(direction)] = false;
+                });
+            });
+            
+            function getKeyForDirection(direction) {
+                switch(direction) {
+                    case 'up': return 'ArrowUp';
+                    case 'down': return 'ArrowDown';
+                    case 'left': return 'ArrowLeft';
+                    case 'right': return 'ArrowRight';
+                    default: return '';
+                }
+            }
+            
+            // 전체화면 버튼
+            const fullscreenBtn = document.getElementById('fullscreenBtn');
+            fullscreenBtn.addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        alert('전체화면 모드를 사용할 수 없습니다: ' + err.message);
+                    });
+                } else {
+                    document.exitFullscreen();
+                }
+            });
+            
+            // 초기 카메라 위치 설정
+            setTimeout(() => {
+                updateCamera();
+            }, 100);
+            
+            // 학생 내보내기 신호 감지 (로그인 후에만 작동)
+            if (!isTeacher) {
+                let lastKickTime = 0;
+                const kickListener = database.ref('kickAll').on('value', (snapshot) => {
+                    const kickTime = snapshot.val();
+                    if (kickTime && kickTime > lastKickTime) {
+                        lastKickTime = kickTime;
+                        
+                        // 이벤트 리스너 제거
+                        database.ref('kickAll').off('value', kickListener);
+                        
+                        // 내 사용자 데이터 삭제
+                        database.ref('users/' + myUserId).remove();
+                        
+                        // 키 입력 초기화
+                        Object.keys(keys).forEach(key => {
+                            keys[key] = false;
+                        });
+                        
+                        // alert 후 로그인 화면으로
+                        alert('선생님에 의해 퇴장되었습니다.');
+                        location.reload();
+                    }
+                });
+            }
+        }
+        
+        // 사용자 수 업데이트
+        function updateUserCount() {
+            const count = Object.keys(users).length;
+            const chatTitle = document.getElementById('chatTitle');
+            if (isTeacher) {
+                chatTitle.textContent = `👨‍🏫 선생님 버전 (${count}명)`;
+            } else {
+                chatTitle.textContent = `👦 학생 버전 (${count}명)`;
+            }
+        }
+        
+        // 카메라 팔로우 기능
+        function updateCamera() {
+            const gameContainer = document.getElementById('gameContainer');
+            const containerWidth = gameContainer.clientWidth;
+            const containerHeight = gameContainer.clientHeight;
+            
+            // 화면이 교실보다 작을 때만 스크롤
+            if (containerWidth < canvas.width || containerHeight < canvas.height) {
+                // 플레이어를 화면 중앙에 유지 (부드러운 스크롤)
+                const targetScrollX = myPosition.x - containerWidth / 2;
+                const targetScrollY = myPosition.y - containerHeight / 2;
+                
+                // 스크롤 범위 제한
+                const maxScrollX = canvas.width - containerWidth;
+                const maxScrollY = canvas.height - containerHeight;
+                
+                gameContainer.scrollLeft = Math.max(0, Math.min(maxScrollX, targetScrollX));
+                gameContainer.scrollTop = Math.max(0, Math.min(maxScrollY, targetScrollY));
+            }
+        }
+        
+        // 장애물 생성 함수
+        function generateObstacles() {
+            const WALL_THICKNESS = 40;
+            const TILE_SIZE = 40;
+            const OBSTACLE_SIZE = 40;
+            const CLUSTER_COUNT = 10; // 10개의 묶음
+            const newObstacles = [];
+            
+            // 3개씩 묶음 패턴 (직선 또는 ㄱ자 ㄴ자)
+            const patterns = [
+                // 가로 직선
+                [{x:0, y:0}, {x:1, y:0}, {x:2, y:0}],
+                // 세로 직선
+                [{x:0, y:0}, {x:0, y:1}, {x:0, y:2}],
+                // ㄱ자 (우하)
+                [{x:0, y:0}, {x:1, y:0}, {x:1, y:1}],
+                // ㄱ자 (좌하)
+                [{x:1, y:0}, {x:0, y:0}, {x:0, y:1}],
+                // ㄴ자 (우상)
+                [{x:0, y:1}, {x:0, y:0}, {x:1, y:0}],
+                // ㄴ자 (좌상)
+                [{x:1, y:1}, {x:1, y:0}, {x:0, y:0}]
+            ];
+            
+            for (let i = 0; i < CLUSTER_COUNT; i++) {
+                let attempts = 0;
+                let validCluster = false;
+                let clusterObstacles = [];
+                
+                while (!validCluster && attempts < 100) {
+                    // 랜덤 패턴 선택
+                    const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+                    
+                    // 랜덤 시작 위치
+                    const gridX = Math.floor(Math.random() * Math.floor((canvas.width - WALL_THICKNESS * 2 - TILE_SIZE * 3) / TILE_SIZE));
+                    const gridY = Math.floor(Math.random() * Math.floor((canvas.height - WALL_THICKNESS * 2 - TILE_SIZE * 3) / TILE_SIZE));
+                    
+                    const startX = WALL_THICKNESS + gridX * TILE_SIZE;
+                    const startY = WALL_THICKNESS + gridY * TILE_SIZE;
+                    
+                    // 패턴대로 3개 배치
+                    clusterObstacles = pattern.map(offset => ({
+                        x: startX + offset.x * TILE_SIZE,
+                        y: startY + offset.y * TILE_SIZE,
+                        size: OBSTACLE_SIZE
+                    }));
+                    
+                    // 화면 범위 체크
+                    validCluster = true;
+                    for (const obs of clusterObstacles) {
+                        if (obs.x < WALL_THICKNESS || obs.y < WALL_THICKNESS ||
+                            obs.x + OBSTACLE_SIZE > canvas.width - WALL_THICKNESS ||
+                            obs.y + OBSTACLE_SIZE > canvas.height - WALL_THICKNESS) {
+                            validCluster = false;
+                            break;
+                        }
+                    }
+                    
+                    // 기존 장애물과 겹치는지 체크
+                    if (validCluster) {
+                        for (const newObs of clusterObstacles) {
+                            for (const existingObs of newObstacles) {
+                                if (newObs.x === existingObs.x && newObs.y === existingObs.y) {
+                                    validCluster = false;
+                                    break;
+                                }
+                            }
+                            if (!validCluster) break;
+                        }
+                    }
+                    
+                    // 캐릭터와 겹치는지 체크
+                    if (validCluster) {
+                        for (const obs of clusterObstacles) {
+                            for (let userId in users) {
+                                const user = users[userId];
+                                if (user && Math.abs(user.x - (obs.x + OBSTACLE_SIZE/2)) < OBSTACLE_SIZE * 2 && 
+                                    Math.abs(user.y - (obs.y + OBSTACLE_SIZE/2)) < OBSTACLE_SIZE * 2) {
+                                    validCluster = false;
+                                    break;
+                                }
+                            }
+                            if (!validCluster) break;
+                        }
+                    }
+                    
+                    attempts++;
+                }
+                
+                if (validCluster) {
+                    newObstacles.push(...clusterObstacles);
+                }
+            }
+            
+            obstacles = newObstacles;
+            database.ref('obstacles').set(newObstacles);
+        }
+        
+        // 장애물 충돌 체크 함수
+        function checkObstacleCollision(x, y, size = 40) {
+            for (let i = 0; i < obstacles.length; i++) {
+                const obs = obstacles[i];
+                // AABB 충돌 체크
+                if (x + size/2 > obs.x && 
+                    x - size/2 < obs.x + obs.size &&
+                    y + size/2 > obs.y && 
+                    y - size/2 < obs.y + obs.size) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        // 게임 루프
+        function gameLoop() {
+            // 이동 처리
+            let moved = false;
+            const oldX = myPosition.x;
+            const oldY = myPosition.y;
+            
+            if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
+                myPosition.x -= MOVE_SPEED;
+                moved = true;
+            }
+            if (keys['ArrowRight'] || keys['d'] || keys['D']) {
+                myPosition.x += MOVE_SPEED;
+                moved = true;
+            }
+            if (keys['ArrowUp'] || keys['w'] || keys['W']) {
+                myPosition.y -= MOVE_SPEED;
+                moved = true;
+            }
+            if (keys['ArrowDown'] || keys['s'] || keys['S']) {
+                myPosition.y += MOVE_SPEED;
+                moved = true;
+            }
+            
+            // 벽 충돌 처리
+            const WALL_THICKNESS = 40;
+            myPosition.x = Math.max(WALL_THICKNESS + 20, Math.min(canvas.width - WALL_THICKNESS - 20, myPosition.x));
+            myPosition.y = Math.max(WALL_THICKNESS + 20, Math.min(canvas.height - WALL_THICKNESS - 20, myPosition.y));
+            
+            // 장애물 충돌 처리
+            if (moved && checkObstacleCollision(myPosition.x, myPosition.y)) {
+                // 충돌 시 이전 위치로 되돌리기
+                myPosition.x = oldX;
+                myPosition.y = oldY;
+                moved = false;
+            }
+            
+            // 위치가 변경되면 Firebase 업데이트
+            if (moved && (oldX !== myPosition.x || oldY !== myPosition.y)) {
+                database.ref('users/' + myUserId).update({
+                    x: myPosition.x,
+                    y: myPosition.y
+                });
+                
+                // 카메라 팔로우 - 플레이어가 화면 가장자리에 가면 스크롤
+                updateCamera();
+            }
+            
+            // 화면 그리기
+            drawGame();
+            
+            // 게임 업데이트
+            if (currentGame === 'poop') {
+                updatePoopGame();
+            } else if (currentGame === 'zombie') {
+                updateZombieGame();
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // 교실 그리기
+        function drawGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 바닥 (체스판 패턴)
+            const tileSize = 40;
+            const lightGray = '#e8e8e8';
+            const darkGray = '#d0d0d0';
+            
+            for (let y = 0; y < canvas.height; y += tileSize) {
+                for (let x = 0; x < canvas.width; x += tileSize) {
+                    const isLight = (Math.floor(x / tileSize) + Math.floor(y / tileSize)) % 2 === 0;
+                    ctx.fillStyle = isLight ? lightGray : darkGray;
+                    ctx.fillRect(x, y, tileSize, tileSize);
+                }
+            }
+            
+            // 벽 (모두 갈색으로 통일)
+            const WALL_THICKNESS = 40;
+            ctx.fillStyle = '#8B4513';
+            
+            // 위쪽 벽
+            ctx.fillRect(0, 0, canvas.width, WALL_THICKNESS);
+            
+            // 아래쪽 벽
+            ctx.fillRect(0, canvas.height - WALL_THICKNESS, canvas.width, WALL_THICKNESS);
+            
+            // 왼쪽 벽
+            ctx.fillRect(0, 0, WALL_THICKNESS, canvas.height);
+            
+            // 오른쪽 벽
+            ctx.fillRect(canvas.width - WALL_THICKNESS, 0, WALL_THICKNESS, canvas.height);
+            
+            // 장애물 그리기 (타일 1칸에 정확히 맞춤)
+            obstacles.forEach(obs => {
+                ctx.font = `${obs.size * 0.9}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('🧱', obs.x + obs.size / 2, obs.y + obs.size / 2);
+            });
+            
+            // 모든 사용자 그리기
+            Object.keys(users).forEach(userId => {
+                const user = users[userId];
+                if (!user) return;
+                
+                let emoji = user.emoji;
+                
+                // 똥 피하기 게임 중 탈락자
+                if (currentGame === 'poop' && eliminatedUsers.has(userId)) {
+                    emoji = '😱';
+                }
+                
+                // 좀비 게임 중 좀비
+                if (currentGame === 'zombie' && zombies[userId]) {
+                    emoji = '💀';
+                }
+                
+                // 이모지 그리기 (얼굴 크기: 40px)
+                const faceSize = 40;
+                ctx.font = `${faceSize}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(emoji, user.x, user.y);
+                
+                // 이름표 그리기 (가로 80px, 세로 40px - 2:1 비율)
+                const nameBoxWidth = faceSize * 2;
+                const nameBoxHeight = faceSize;
+                const nameBoxY = user.y + faceSize / 2; // 얼굴 바로 밑
+                
+                // 반투명 검정 직사각형 배경
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(
+                    user.x - nameBoxWidth / 2,
+                    nameBoxY,
+                    nameBoxWidth,
+                    nameBoxHeight
+                );
+                
+                // 흰색 이름 텍스트
+                ctx.font = '14px Malgun Gothic';
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(user.name, user.x, nameBoxY + nameBoxHeight / 2);
+                
+                // 교사 표시 (이름표 위)
+                if (user.isTeacher) {
+                    ctx.font = '20px Arial';
+                    ctx.fillText('👑', user.x, user.y - faceSize / 2 - 10);
+                }
+                
+                // 좀비 효과
+                if (currentGame === 'zombie' && zombies[userId]) {
+                    ctx.strokeStyle = 'red';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(user.x, user.y, 30, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            });
+            
+            // 똥 그리기
+            if (currentGame === 'poop') {
+                poops.forEach(poop => {
+                    ctx.font = '30px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('💩', poop.x, poop.y);
+                });
+            }
+        }
+        
+        // 창문 그리기
+        
+        // 채팅 기능
+        const chatInput = document.getElementById('chatInput');
+        const chatSendBtn = document.getElementById('chatSendBtn');
+        
+        function sendChat() {
+            const message = chatInput.value.trim();
+            if (!message) return;
+            
+            if (isAnnounceMode) {
+                // 공지 모드
+                database.ref('chat').push({
+                    userId: 'system',
+                    name: '📢 공지',
+                    emoji: '📢',
+                    message: message,
+                    timestamp: Date.now()
+                });
+                
+                // 공지 효과음
+                playSound('announce');
+                
+                // 공지 모드 해제
+                isAnnounceMode = false;
+                chatInput.style.background = '';
+                chatInput.style.borderColor = '';
+                chatInput.placeholder = '메시지를 입력하세요...';
+                document.getElementById('announceBtn').style.background = '';
+            } else {
+                // 일반 채팅
+                database.ref('chat').push({
+                    userId: myUserId,
+                    name: myName,
+                    emoji: myEmoji,
+                    message: message,
+                    timestamp: Date.now()
+                });
+            }
+            
+            chatInput.value = '';
+        }
+        
+        chatSendBtn.addEventListener('click', sendChat);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendChat();
+        });
+        
+        function addChatMessage(msg) {
+            const chatMessages = document.getElementById('chatMessages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'chat-message';
+            msgDiv.textContent = `${msg.emoji} ${msg.name}: ${msg.message}`;
+            chatMessages.appendChild(msgDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        // 교사 기능
+        let isAnnounceMode = false;
+        
+        document.getElementById('announceBtn').addEventListener('click', () => {
+            isAnnounceMode = !isAnnounceMode;
+            const chatInput = document.getElementById('chatInput');
+            const announceBtn = document.getElementById('announceBtn');
+            
+            if (isAnnounceMode) {
+                chatInput.style.background = '#fff3cd';
+                chatInput.style.borderColor = '#ffc107';
+                chatInput.placeholder = '공지 메시지를 입력하세요...';
+                announceBtn.style.background = '#ffc107';
+            } else {
+                chatInput.style.background = '';
+                chatInput.style.borderColor = '';
+                chatInput.placeholder = '메시지를 입력하세요...';
+                announceBtn.style.background = '';
+            }
+        });
+        
+        // 채팅 내용 지우기
+        document.getElementById('clearChatBtn').addEventListener('click', () => {
+            database.ref('chat').remove();
+            document.getElementById('chatMessages').innerHTML = '';
+        });
+        
+        // 모든 학생 모이기
+        document.getElementById('gatherStudentsBtn').addEventListener('click', () => {
+            const teacherUser = users[myUserId];
+            if (teacherUser) {
+                Object.keys(users).forEach(userId => {
+                    if (userId !== myUserId) {
+                        database.ref('users/' + userId).update({
+                            x: teacherUser.x,
+                            y: teacherUser.y
+                        });
+                    }
+                });
+            }
+        });
+        
+        // 모든 학생 내보내기
+        document.getElementById('kickAllBtn').addEventListener('click', () => {
+            const kickTimestamp = Date.now();
+            database.ref('kickAll').set(kickTimestamp);
+            
+            // 3초 후 자동으로 제거 (학생들이 퇴장한 후)
+            setTimeout(() => {
+                database.ref('kickAll').remove();
+            }, 3000);
+        });
+        
+        // 장애물 재설치
+        document.getElementById('regenerateObstaclesBtn').addEventListener('click', () => {
+            generateObstacles();
+        });
+        
+        // 장애물 지우기
+        document.getElementById('clearObstaclesBtn').addEventListener('click', () => {
+            obstacles = [];
+            database.ref('obstacles').remove();
+        });
+        
+        // 똥 피하기 게임
+        let poops = [];
+        let eliminatedUsers = new Set();
+        let poopInterval = null;
+        
+        document.getElementById('poopGameBtn').addEventListener('click', function() {
+            if (currentGame === 'poop') {
+                // 게임 중단
+                database.ref('game').remove();
+                this.textContent = '💩 똥 피하기 시작';
+                this.classList.remove('active');
+            } else {
+                // 게임 시작
+                database.ref('game').set({
+                    type: 'poop',
+                    startTime: Date.now()
+                });
+                this.textContent = '💩 똥 피하기 중단';
+                this.classList.add('active');
+                showGameStatus('💩 똥 피하기 게임 시작!', 2000);
+                playSound('poopStart');
+                
+                // 공지
+                database.ref('chat').push({
+                    userId: 'system',
+                    name: '📢 공지',
+                    emoji: '📢',
+                    message: '💩 똥 피하기 게임이 시작되었습니다!',
+                    timestamp: Date.now()
+                });
+                playSound('announce');
+            }
+        });
+        
+        function startPoopGame(gameData) {
+            poops = [];
+            eliminatedUsers = new Set();
+            
+            if (!poopInterval) {
+                poopInterval = setInterval(() => {
+                    if (currentGame !== 'poop') {
+                        clearInterval(poopInterval);
+                        poopInterval = null;
+                        return;
+                    }
+                    
+                    // 새로운 똥 생성
+                    poops.push({
+                        x: Math.random() * canvas.width,
+                        y: 0,
+                        speed: 3 + Math.random() * 3
+                    });
+                }, 500);
+            }
+        }
+        
+        function updatePoopGame() {
+            // 똥 이동
+            poops = poops.filter(poop => {
+                poop.y += poop.speed;
+                
+                // 화면 밖으로 나가면 제거
+                if (poop.y > canvas.height) return false;
+                
+                // 플레이어와 충돌 체크
+                Object.keys(users).forEach(userId => {
+                    if (eliminatedUsers.has(userId)) return;
+                    
+                    const user = users[userId];
+                    if (!user) return;
+                    
+                    // 교사는 똥에 맞아도 변화 없음
+                    if (user.isTeacher) return;
+                    
+                    const dist = Math.sqrt(Math.pow(user.x - poop.x, 2) + Math.pow(user.y - poop.y, 2));
+                    if (dist < 30) {
+                        eliminatedUsers.add(userId);
+                        playSound('poopHit'); // 똥 맞음 효과음
+                        
+                        // 생존자 수 체크 (교사 제외)
+                        const survivors = Object.keys(users).filter(id => {
+                            const u = users[id];
+                            return !eliminatedUsers.has(id) && u && !u.isTeacher;
+                        });
+                        
+                        if (survivors.length === 1) {
+                            const winner = users[survivors[0]];
+                            showGameStatus(`🎉 ${winner.emoji} ${winner.name} 우승!`, 3000);
+                            playSound('win'); // 우승 효과음
+                            
+                            // 승자 채팅 공지
+                            database.ref('chat').push({
+                                userId: 'system',
+                                name: '📢 공지',
+                                emoji: '📢',
+                                message: `🎉 똥 피하기 게임 승자: ${winner.emoji} ${winner.name}`,
+                                timestamp: Date.now()
+                            });
+                            playSound('announce');
+                            
+                            setTimeout(() => {
+                                if (isTeacher) {
+                                    database.ref('game').remove();
+                                }
+                            }, 3000);
+                        }
+                    }
+                });
+                
+                return true;
+            });
+        }
+        
+        // 좀비 게임
+        let zombies = {};
+        let zombieInterval = null;
+        
+        document.getElementById('zombieGameBtn').addEventListener('click', function() {
+            if (currentGame === 'zombie') {
+                // 게임 중단
+                database.ref('game').remove();
+                this.textContent = '💀 좀비 게임 시작';
+                this.classList.remove('active');
+            } else {
+                // 게임 시작 - 랜덤 좀비 선택 (교사 제외)
+                const userIds = Object.keys(users).filter(id => {
+                    const u = users[id];
+                    return u && !u.isTeacher;
+                });
+                
+                if (userIds.length < 1) {
+                    return;  // 학생이 0명이면 시작 안 함
+                }
+                
+                const randomZombie = userIds[Math.floor(Math.random() * userIds.length)];
+                const zombieData = {};
+                zombieData[randomZombie] = true;
+                
+                database.ref('game').set({
+                    type: 'zombie',
+                    zombies: zombieData,
+                    startTime: Date.now()
+                });
+                
+                this.textContent = '💀 좀비 게임 중단';
+                this.classList.add('active');
+                showGameStatus('💀 좀비 게임 시작!', 2000);
+                playSound('zombieStart');
+                
+                // 공지
+                database.ref('chat').push({
+                    userId: 'system',
+                    name: '📢 공지',
+                    emoji: '📢',
+                    message: '💀 좀비 게임이 시작되었습니다!',
+                    timestamp: Date.now()
+                });
+                playSound('announce');
+            }
+        });
+        
+        function startZombieGame(gameData) {
+            zombies = gameData.zombies || {};
+        }
+        
+        function updateZombieGame() {
+            // 좀비들의 이동 속도 증가 (Firebase에서 직접 처리는 어려우므로 시각 효과만)
+            // 충돌 체크
+            Object.keys(users).forEach(userId => {
+                if (zombies[userId]) {
+                    // 좀비가 다른 사람과 충돌했는지 체크
+                    const zombie = users[userId];
+                    if (!zombie) return;
+                    
+                    Object.keys(users).forEach(targetId => {
+                        if (targetId === userId || zombies[targetId]) return;
+                        
+                        const target = users[targetId];
+                        if (!target) return;
+                        
+                        // 교사는 좀비 되지 않음
+                        if (target.isTeacher) return;
+                        
+                        const dist = Math.sqrt(Math.pow(zombie.x - target.x, 2) + Math.pow(zombie.y - target.y, 2));
+                        if (dist < 40) {
+                            // 감염!
+                            if (isTeacher) {
+                                const newZombies = {...zombies};
+                                newZombies[targetId] = true;
+                                database.ref('game/zombies').set(newZombies);
+                                playSound('zombieInfect'); // 좀비 감염 효과음
+                                
+                                // 생존자 수 체크 (교사 제외)
+                                const survivors = Object.keys(users).filter(id => {
+                                    const u = users[id];
+                                    return !newZombies[id] && u && !u.isTeacher;
+                                });
+                                
+                                if (survivors.length === 1) {
+                                    const winner = users[survivors[0]];
+                                    showGameStatus(`🏆 ${winner.emoji} ${winner.name} 최후 생존!`, 3000);
+                                    playSound('win'); // 우승 효과음
+                                    
+                                    // 승자 채팅 공지
+                                    database.ref('chat').push({
+                                        userId: 'system',
+                                        name: '📢 공지',
+                                        emoji: '📢',
+                                        message: `🏆 좀비 게임 최후 생존: ${winner.emoji} ${winner.name}`,
+                                        timestamp: Date.now()
+                                    });
+                                    playSound('announce');
+                                    
+                                    setTimeout(() => {
+                                        database.ref('game').remove();
+                                    }, 3000);
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        }
+        
+        // 게임 상태 메시지 표시
+        function showGameStatus(message, duration) {
+            const statusDiv = document.getElementById('gameStatus');
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, duration);
+        }
+        
+        // 모바일 터치 조작 (추후 추가 예정)
+        // TODO: 터치 조이스틱 구현
+        
+    </script>
+</body>
+</html>
