@@ -1360,14 +1360,18 @@
             
             // 좀비 게임
             if (currentGame === 'zombie') {
+                // 우승자가 정해지면 모든 좀비 정지
+                if (gameWinner && zombies[myUserId]) {
+                    canMove = false;
+                }
                 // 우승자가 정해지면 우승자와 선생님만 이동 가능
                 if (gameWinner && myUserId !== gameWinner && !isTeacher) {
                     canMove = false;
                 }
             }
             
-            // 좀비는 속도 1.2배
-            const moveSpeed = (currentGame === 'zombie' && zombies[myUserId]) ? MOVE_SPEED * 1.2 : MOVE_SPEED;
+            // 좀비는 속도 1.1배
+            const moveSpeed = (currentGame === 'zombie' && zombies[myUserId]) ? MOVE_SPEED * 1.1 : MOVE_SPEED;
             
             // 이동 처리
             let moved = false;
@@ -1839,8 +1843,8 @@
                 return !hit; // 맞은 똥은 제거
             });
             
-            // 승자 체크 (매 프레임 한 번만)
-            if (!winnerAnnounced) {
+            // 승자 체크 (교사만 실행, 매 프레임 한 번만)
+            if (isTeacher && !winnerAnnounced) {
                 const survivors = Object.keys(users).filter(id => {
                     const u = users[id];
                     return !eliminatedUsers.has(id) && u && !u.isTeacher;
@@ -1858,7 +1862,7 @@
                         poopInterval = null;
                     }
                     
-                    // 승자 공지
+                    // 승자 공지 (교사만)
                     showGameStatus(`🎉 ${winner.emoji} ${winner.name} 우승!`, 3000);
                     playSound('win');
                     
