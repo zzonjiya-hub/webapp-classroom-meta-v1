@@ -769,24 +769,35 @@
             keys[e.key] = false;
         });
         
-        // 로그인 화면 설정
+        // 로그인 화면 설정 - DOM 로드 후 실행 보장
+        console.log('로그인 설정 시작');
         const nameInput = document.getElementById('nameInput');
         const passwordInput = document.getElementById('passwordInput');
         const loginBtn = document.getElementById('loginBtn');
         const emojiOptions = document.querySelectorAll('.emoji-option');
         const randomEmojiBtn = document.getElementById('randomEmojiBtn');
+        
+        console.log('nameInput:', nameInput);
+        console.log('passwordInput:', passwordInput);
+        console.log('loginBtn:', loginBtn);
+        console.log('emojiOptions:', emojiOptions);
+        console.log('randomEmojiBtn:', randomEmojiBtn);
+        
         let currentEmojis = [];
         
         // checkLoginReady 함수를 먼저 정의
         function checkLoginReady() {
             const ready = myName !== '' && myEmoji !== '' && passwordInput.value !== '';
             loginBtn.disabled = !ready;
+            console.log('checkLoginReady:', {myName, myEmoji, password: passwordInput.value, ready});
         }
         
         // 3개의 랜덤 이모지 선택 함수
         function selectRandomEmojis() {
+            console.log('selectRandomEmojis 호출');
             const shuffled = [...emojis].sort(() => Math.random() - 0.5);
             currentEmojis = shuffled.slice(0, 3);
+            console.log('선택된 이모지:', currentEmojis);
             
             emojiOptions.forEach((option, index) => {
                 option.textContent = currentEmojis[index];
@@ -797,42 +808,53 @@
             if (emojiOptions.length > 0) {
                 emojiOptions[0].classList.add('selected');
                 myEmoji = currentEmojis[0];
+                console.log('첫 번째 캐릭터 자동 선택:', myEmoji);
             }
             
             checkLoginReady();
         }
         
         // 초기 3개 랜덤 이모지 표시 및 첫 번째 자동 선택
+        console.log('초기 이모지 설정 시작');
         selectRandomEmojis();
         
         // 이모지 옵션 클릭 이벤트
         emojiOptions.forEach((option) => {
+            console.log('이모지 옵션에 클릭 이벤트 추가:', option);
             option.addEventListener('click', () => {
+                console.log('이모지 클릭됨:', option.textContent);
                 // 모든 선택 해제
                 emojiOptions.forEach(opt => opt.classList.remove('selected'));
                 
                 // 클릭한 것 선택
                 option.classList.add('selected');
                 myEmoji = option.textContent;
+                console.log('선택된 이모지:', myEmoji);
                 checkLoginReady();
             });
         });
         
         // 랜덤 선택 버튼 이벤트
         randomEmojiBtn.addEventListener('click', (e) => {
+            console.log('주사위 버튼 클릭됨');
             e.preventDefault();
             selectRandomEmojis();
         });
         
         nameInput.addEventListener('input', (e) => {
             myName = e.target.value.trim();
+            console.log('이름 입력:', myName);
             checkLoginReady();
         });
         
-        passwordInput.addEventListener('input', checkLoginReady);
+        passwordInput.addEventListener('input', () => {
+            console.log('비밀번호 입력:', passwordInput.value);
+            checkLoginReady();
+        });
         
         // 로그인
         loginBtn.addEventListener('click', () => {
+            console.log('입장하기 버튼 클릭됨');
             const password = passwordInput.value;
             
             if (password !== STUDENT_PASSWORD && password !== TEACHER_PASSWORD) {
@@ -1288,14 +1310,14 @@
                 
                 let emoji = user.emoji;
                 
-                // 똥 피하기 게임 중 탈락자
+                // 똥 피하기 게임 중 탈락자는 똥으로 변경
                 if (currentGame === 'poop' && eliminatedUsers.has(userId)) {
-                    emoji = '😱';
+                    emoji = '💩';
                 }
                 
                 // 좀비 게임 중 좀비
                 if (currentGame === 'zombie' && zombies[userId]) {
-                    emoji = '💀';
+                    emoji = '😱';
                 }
                 
                 // 이모지 그리기 (얼굴 크기: 40px)
@@ -1495,6 +1517,16 @@
                 this.textContent = '💩 똥 피하기';
                 this.classList.remove('active');
                 
+                // 중단 공지
+                database.ref('chat').push({
+                    userId: 'system',
+                    name: '📢 공지',
+                    emoji: '📢',
+                    message: '💩 똥 피하기 게임이 종료되었습니다.',
+                    timestamp: Date.now()
+                });
+                playSound('announce');
+                
                 // 상태 초기화
                 if (poopInterval) {
                     clearInterval(poopInterval);
@@ -1635,19 +1667,12 @@
                             });
                             playSound('announce');
                             
-                            setTimeout(() => {
-                                if (isTeacher) {
-                                    database.ref('game').remove();
-                                }
-                            }, 3000);
+                            // 게임 종료하지 않음 - 교사가 중지 버튼 누를 때까지 유지
                         } else if (survivors.length === 0 && !winnerAnnounced) {
                             winnerAnnounced = true;
                             showGameStatus('게임 종료 - 생존자 없음', 3000);
-                            setTimeout(() => {
-                                if (isTeacher) {
-                                    database.ref('game').remove();
-                                }
-                            }, 3000);
+                            
+                            // 게임 종료하지 않음 - 교사가 중지 버튼 누를 때까지 유지
                         }
                     }
                 });
@@ -1662,23 +1687,34 @@
         
         document.getElementById('zombieGameBtn').addEventListener('click', function() {
             if (currentGame === 'zombie') {
-                // 게임 중단
+                // 게임 중단 - 모든 상태 원래대로
                 database.ref('game').remove();
                 this.textContent = '💀 좀비 게임';
                 this.classList.remove('active');
                 
-                // 상태 초기화
+                // 중단 공지
+                database.ref('chat').push({
+                    userId: 'system',
+                    name: '📢 공지',
+                    emoji: '📢',
+                    message: '💀 좀비 게임이 종료되었습니다.',
+                    timestamp: Date.now()
+                });
+                playSound('announce');
+                
+                // 상태 완전 초기화
                 zombies = {};
                 zombieWinnerAnnounced = false;
             } else {
-                // 게임 시작 - 랜덤 좀비 선택 (교사 제외)
+                // 게임 시작 - 학생 3명 이상 체크
                 const userIds = Object.keys(users).filter(id => {
                     const u = users[id];
                     return u && !u.isTeacher;
                 });
                 
-                if (userIds.length < 1) {
-                    return;  // 학생이 0명이면 시작 안 함
+                if (userIds.length < 3) {
+                    showGameStatus('⚠️ 학생이 3명 이상 필요합니다!', 2000);
+                    return;
                 }
                 
                 const randomZombie = userIds[Math.floor(Math.random() * userIds.length)];
@@ -1759,15 +1795,12 @@
                                     });
                                     playSound('announce');
                                     
-                                    setTimeout(() => {
-                                        database.ref('game').remove();
-                                    }, 3000);
+                                    // 게임 종료하지 않음 - 교사가 중지 버튼 누를 때까지 유지
                                 } else if (survivors.length === 0 && !zombieWinnerAnnounced) {
                                     zombieWinnerAnnounced = true;
                                     showGameStatus('게임 종료 - 모두 좀비가 되었습니다', 3000);
-                                    setTimeout(() => {
-                                        database.ref('game').remove();
-                                    }, 3000);
+                                    
+                                    // 게임 종료하지 않음 - 교사가 중지 버튼 누를 때까지 유지
                                 }
                             }
                         }
