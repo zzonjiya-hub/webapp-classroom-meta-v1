@@ -394,6 +394,38 @@
             transform: scale(1.05);
         }
         
+        #resetAllBtn {
+            padding: 8px 15px;
+            background: #f59e0b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        #resetAllBtn:hover {
+            background: #d97706;
+            transform: scale(1.05);
+        }
+        
+        #logoutBtn {
+            padding: 8px 15px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        #logoutBtn:hover {
+            background: #dc2626;
+            transform: scale(1.05);
+        }
+        
         /* 조이스틱 - 마인크래프트 스타일 */
         #joystick {
             position: fixed;
@@ -528,6 +560,8 @@
             <div id="chatHeader">
                 <h3 id="chatTitle">💬 채팅</h3>
                 <div style="display: flex; gap: 5px;">
+                    <button id="resetAllBtn" title="전체 초기화" style="display: none;">🔄</button>
+                    <button id="logoutBtn" title="로그아웃">🚪</button>
                     <button id="fullscreenBtn" title="전체화면">⛶</button>
                 </div>
             </div>
@@ -769,6 +803,21 @@
             keys[e.key] = false;
         });
         
+        // 페이지 로드 시 자동 로그인 체크
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedName = localStorage.getItem('classroomMeta_name');
+            const savedEmoji = localStorage.getItem('classroomMeta_emoji');
+            const savedPassword = localStorage.getItem('classroomMeta_password');
+            
+            if (savedName && savedEmoji && savedPassword) {
+                console.log('저장된 로그인 정보 발견 - 자동 로그인 시도');
+                // 자동 로그인 실행
+                setTimeout(() => {
+                    performLogin(savedName, savedEmoji, savedPassword);
+                }, 100);
+            }
+        });
+        
         // 로그인 화면 설정 - DOM 로드 후 실행 보장
         console.log('로그인 설정 시작');
         const nameInput = document.getElementById('nameInput');
@@ -852,17 +901,27 @@
             checkLoginReady();
         });
         
-        // 로그인
-        loginBtn.addEventListener('click', () => {
-            console.log('입장하기 버튼 클릭됨');
-            const password = passwordInput.value;
+        // 로그인 함수
+        function performLogin(name, emoji, password) {
+            // 데이터 검증
+            if (!name || !emoji || !password) {
+                console.error('로그인 데이터 불완전:', {name, emoji, password});
+                return false;
+            }
             
             if (password !== STUDENT_PASSWORD && password !== TEACHER_PASSWORD) {
                 alert('비밀번호가 올바르지 않습니다!');
-                return;
+                return false;
             }
             
+            myName = name;
+            myEmoji = emoji;
             isTeacher = (password === TEACHER_PASSWORD);
+            
+            // localStorage에 로그인 정보 저장
+            localStorage.setItem('classroomMeta_name', myName);
+            localStorage.setItem('classroomMeta_emoji', myEmoji);
+            localStorage.setItem('classroomMeta_password', password);
             
             // Firebase에 사용자 등록
             myUserId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -888,12 +947,21 @@
             if (isTeacher) {
                 document.getElementById('chatTitle').textContent = '👨‍🏫 선생님 버전';
                 document.getElementById('teacherPanel').style.display = 'block';
+                document.getElementById('resetAllBtn').style.display = 'block';
             } else {
                 document.getElementById('chatTitle').textContent = '👦 학생 버전';
             }
             
             // 게임 시작
             startGame();
+            return true;
+        }
+        
+        // 로그인 버튼 이벤트
+        loginBtn.addEventListener('click', () => {
+            console.log('입장하기 버튼 클릭됨');
+            const password = passwordInput.value;
+            performLogin(myName, myEmoji, password);
         });
         
         // 게임 시작
@@ -1003,6 +1071,86 @@
                     default: return '';
                 }
             }
+            
+            // 전체 초기화 버튼 (선생님만)
+            const resetAllBtn = document.getElementById('resetAllBtn');
+            if (isTeacher) {
+                resetAllBtn.addEventListener('click', () => {
+                    const confirmMsg = '전체 초기화를 실행하시겠습니까?\n\n다음 항목이 삭제됩니다:\n- 채팅 메시지\n- 게임 정보\n- 장애물\n- 추방 기록\n- 잘못된 사용자 데이터 (유령 사용자)\n\n학생들은 계속 접속 상태로 유지됩니다.';
+                    
+                    if (confirm(confirmMsg)) {
+                        // 전체 초기화 실행
+                        database.ref('chat').remove();
+                        database.ref('game').remove();
+                        database.ref('obstacles').remove();
+                        database.ref('kickAll').remove();
+                        
+                        // 유령 사용자 정리 (name이나 emoji가 없는 사용자)
+                        database.ref('users').once('value', (snapshot) => {
+                            const usersData = snapshot.val();
+                            if (usersData) {
+                                Object.keys(usersData).forEach(userId => {
+                                    const user = usersData[userId];
+                                    // 필수 데이터가 없으면 삭제
+                                    if (!user.name || !user.emoji || user.x === undefined || user.y === undefined) {
+                                        console.log('유령 사용자 삭제:', userId, user);
+                                        database.ref('users/' + userId).remove();
+                                    }
+                                });
+                            }
+                        });
+                        
+                        // 로컬 상태도 초기화
+                        poops = [];
+                        eliminatedUsers.clear();
+                        obstacles = [];
+                        zombies = {};
+                        currentGame = null;
+                        gameWinner = null;
+                        winnerAnnounced = false;
+                        zombieWinnerAnnounced = false;
+                        
+                        // 게임 버튼 초기화
+                        document.getElementById('poopGameBtn').textContent = '💩 똥 피하기';
+                        document.getElementById('poopGameBtn').classList.remove('active');
+                        document.getElementById('zombieGameBtn').textContent = '😱 좀비 게임';
+                        document.getElementById('zombieGameBtn').classList.remove('active');
+                        
+                        // 공지
+                        database.ref('chat').push({
+                            userId: 'system',
+                            name: '📢 공지',
+                            emoji: '📢',
+                            message: '🔄 전체 초기화가 완료되었습니다.',
+                            timestamp: Date.now()
+                        });
+                        playSound('announce');
+                        
+                        alert('전체 초기화가 완료되었습니다!');
+                    }
+                });
+            }
+            
+            // 로그아웃 버튼 (모두 사용 가능)
+            const logoutBtn = document.getElementById('logoutBtn');
+            logoutBtn.addEventListener('click', () => {
+                const confirmMsg = '로그아웃 하시겠습니까?\n\n저장된 모든 로그인 정보가 삭제됩니다.\n다음 접속 시 다시 로그인해야 합니다.';
+                
+                if (confirm(confirmMsg)) {
+                    // Firebase에서 사용자 삭제
+                    if (myUserId) {
+                        database.ref('users/' + myUserId).remove();
+                    }
+                    
+                    // localStorage 모든 정보 삭제
+                    localStorage.removeItem('classroomMeta_name');
+                    localStorage.removeItem('classroomMeta_emoji');
+                    localStorage.removeItem('classroomMeta_password');
+                    
+                    // 페이지 새로고침 (로그인 화면으로)
+                    location.reload();
+                }
+            });
             
             // 전체화면 버튼
             const fullscreenBtn = document.getElementById('fullscreenBtn');
@@ -1195,11 +1343,31 @@
         
         // 게임 루프
         function gameLoop() {
-            // 똥에 맞은 학생은 움직일 수 없음
-            const canMove = !eliminatedUsers.has(myUserId);
+            // 이동 가능 여부 체크
+            let canMove = true;
             
-            // 좀비는 속도 2배
-            const moveSpeed = (currentGame === 'zombie' && zombies[myUserId]) ? MOVE_SPEED * 2 : MOVE_SPEED;
+            // 똥피하기 게임
+            if (currentGame === 'poop') {
+                // 똥에 맞은 학생은 움직일 수 없음
+                if (eliminatedUsers.has(myUserId)) {
+                    canMove = false;
+                }
+                // 우승자가 정해지면 우승자와 선생님만 이동 가능
+                if (gameWinner && myUserId !== gameWinner && !isTeacher) {
+                    canMove = false;
+                }
+            }
+            
+            // 좀비 게임
+            if (currentGame === 'zombie') {
+                // 우승자가 정해지면 우승자와 선생님만 이동 가능
+                if (gameWinner && myUserId !== gameWinner && !isTeacher) {
+                    canMove = false;
+                }
+            }
+            
+            // 좀비는 속도 1.2배
+            const moveSpeed = (currentGame === 'zombie' && zombies[myUserId]) ? MOVE_SPEED * 1.2 : MOVE_SPEED;
             
             // 이동 처리
             let moved = false;
@@ -1307,6 +1475,12 @@
             Object.keys(users).forEach(userId => {
                 const user = users[userId];
                 if (!user) return;
+                
+                // 필수 데이터 검증
+                if (!user.name || !user.emoji || user.x === undefined || user.y === undefined) {
+                    console.warn('잘못된 사용자 데이터:', userId, user);
+                    return; // 데이터가 불완전하면 그리지 않음
+                }
                 
                 let emoji = user.emoji;
                 
@@ -1509,6 +1683,7 @@
         let poopSpawnInterval = 500; // 초기 생성 간격
         let poopGameStartTime = 0;
         let winnerAnnounced = false;
+        let gameWinner = null; // 우승자 userId
         
         document.getElementById('poopGameBtn').addEventListener('click', function() {
             if (currentGame === 'poop') {
@@ -1536,10 +1711,12 @@
                 eliminatedUsers.clear();
                 poopSpawnInterval = 500;
                 winnerAnnounced = false;
+                gameWinner = null;
             } else {
                 // 게임 시작
                 poopGameStartTime = Date.now();
                 winnerAnnounced = false;
+                gameWinner = null;
                 
                 database.ref('game').set({
                     type: 'poop',
@@ -1626,7 +1803,17 @@
         }
         
         function updatePoopGame() {
-            // 똥 이동
+            // 우승자가 정해졌으면 똥 생성 중지 및 기존 똥 제거
+            if (gameWinner) {
+                poops = [];
+                if (poopInterval) {
+                    clearInterval(poopInterval);
+                    poopInterval = null;
+                }
+                return;
+            }
+            
+            // 똥 이동 및 충돌 체크
             poops = poops.filter(poop => {
                 poop.y += poop.speed;
                 
@@ -1634,6 +1821,7 @@
                 if (poop.y > canvas.height) return false;
                 
                 // 플레이어와 충돌 체크
+                let hit = false;
                 Object.keys(users).forEach(userId => {
                     if (eliminatedUsers.has(userId)) return;
                     
@@ -1644,41 +1832,54 @@
                     if (dist < 30) {
                         eliminatedUsers.add(userId);
                         playSound('poopHit');
-                        
-                        // 생존자 수 체크 (교사 제외)
-                        const survivors = Object.keys(users).filter(id => {
-                            const u = users[id];
-                            return !eliminatedUsers.has(id) && u && !u.isTeacher;
-                        });
-                        
-                        if (survivors.length === 1 && !winnerAnnounced) {
-                            winnerAnnounced = true;
-                            const winner = users[survivors[0]];
-                            showGameStatus(`🎉 ${winner.emoji} ${winner.name} 우승!`, 3000);
-                            playSound('win');
-                            
-                            // 승자 채팅 공지
-                            database.ref('chat').push({
-                                userId: 'system',
-                                name: '📢 공지',
-                                emoji: '📢',
-                                message: `🎉 똥 피하기 게임 승자: ${winner.emoji} ${winner.name}`,
-                                timestamp: Date.now()
-                            });
-                            playSound('announce');
-                            
-                            // 게임 종료하지 않음 - 교사가 중지 버튼 누를 때까지 유지
-                        } else if (survivors.length === 0 && !winnerAnnounced) {
-                            winnerAnnounced = true;
-                            showGameStatus('게임 종료 - 생존자 없음', 3000);
-                            
-                            // 게임 종료하지 않음 - 교사가 중지 버튼 누를 때까지 유지
-                        }
+                        hit = true;
                     }
                 });
                 
-                return true;
+                return !hit; // 맞은 똥은 제거
             });
+            
+            // 승자 체크 (매 프레임 한 번만)
+            if (!winnerAnnounced) {
+                const survivors = Object.keys(users).filter(id => {
+                    const u = users[id];
+                    return !eliminatedUsers.has(id) && u && !u.isTeacher;
+                });
+                
+                if (survivors.length === 1) {
+                    winnerAnnounced = true;
+                    gameWinner = survivors[0];
+                    const winner = users[gameWinner];
+                    
+                    // 모든 똥 즉시 제거
+                    poops = [];
+                    if (poopInterval) {
+                        clearInterval(poopInterval);
+                        poopInterval = null;
+                    }
+                    
+                    // 승자 공지
+                    showGameStatus(`🎉 ${winner.emoji} ${winner.name} 우승!`, 3000);
+                    playSound('win');
+                    
+                    database.ref('chat').push({
+                        userId: 'system',
+                        name: '📢 공지',
+                        emoji: '📢',
+                        message: `🎉 똥 피하기 게임 승자: ${winner.emoji} ${winner.name}`,
+                        timestamp: Date.now()
+                    });
+                    playSound('announce');
+                } else if (survivors.length === 0) {
+                    winnerAnnounced = true;
+                    poops = [];
+                    if (poopInterval) {
+                        clearInterval(poopInterval);
+                        poopInterval = null;
+                    }
+                    showGameStatus('게임 종료 - 생존자 없음', 3000);
+                }
+            }
         }
         
         // 좀비 게임
@@ -1705,6 +1906,7 @@
                 // 상태 완전 초기화
                 zombies = {};
                 zombieWinnerAnnounced = false;
+                gameWinner = null;
             } else {
                 // 게임 시작 - 학생 3명 이상 체크
                 const userIds = Object.keys(users).filter(id => {
@@ -1721,6 +1923,7 @@
                 const zombieData = {};
                 zombieData[randomZombie] = true;
                 zombieWinnerAnnounced = false;
+                gameWinner = null;
                 
                 database.ref('game').set({
                     type: 'zombie',
@@ -1748,13 +1951,21 @@
         function startZombieGame(gameData) {
             zombies = gameData.zombies || {};
             zombieWinnerAnnounced = false;
+            gameWinner = null;
         }
         
         function updateZombieGame() {
-            // 충돌 체크
+            // 우승자가 정해지면 감염 중지
+            if (gameWinner) {
+                return;
+            }
+            
+            // 교사만 좀비 생성 및 감염 처리 가능
+            if (!isTeacher) return;
+            
+            // 충돌 및 감염 체크
             Object.keys(users).forEach(userId => {
                 if (zombies[userId]) {
-                    // 좀비가 다른 사람과 충돌했는지 체크
                     const zombie = users[userId];
                     if (!zombie) return;
                     
@@ -1767,46 +1978,44 @@
                         const dist = Math.sqrt(Math.pow(zombie.x - target.x, 2) + Math.pow(zombie.y - target.y, 2));
                         if (dist < 40) {
                             // 감염!
-                            if (isTeacher) {
-                                const newZombies = {...zombies};
-                                newZombies[targetId] = true;
-                                database.ref('game/zombies').set(newZombies);
-                                playSound('zombieInfect');
-                                
-                                // 생존자 수 체크 (교사 제외)
-                                const survivors = Object.keys(users).filter(id => {
-                                    const u = users[id];
-                                    return !newZombies[id] && u && !u.isTeacher;
-                                });
-                                
-                                if (survivors.length === 1 && !zombieWinnerAnnounced) {
-                                    zombieWinnerAnnounced = true;
-                                    const winner = users[survivors[0]];
-                                    showGameStatus(`🏆 ${winner.emoji} ${winner.name} 최후 생존!`, 3000);
-                                    playSound('win');
-                                    
-                                    // 승자 채팅 공지
-                                    database.ref('chat').push({
-                                        userId: 'system',
-                                        name: '📢 공지',
-                                        emoji: '📢',
-                                        message: `🏆 좀비 게임 최후 생존: ${winner.emoji} ${winner.name}`,
-                                        timestamp: Date.now()
-                                    });
-                                    playSound('announce');
-                                    
-                                    // 게임 종료하지 않음 - 교사가 중지 버튼 누를 때까지 유지
-                                } else if (survivors.length === 0 && !zombieWinnerAnnounced) {
-                                    zombieWinnerAnnounced = true;
-                                    showGameStatus('게임 종료 - 모두 좀비가 되었습니다', 3000);
-                                    
-                                    // 게임 종료하지 않음 - 교사가 중지 버튼 누를 때까지 유지
-                                }
-                            }
+                            const newZombies = {...zombies};
+                            newZombies[targetId] = true;
+                            database.ref('game/zombies').set(newZombies);
+                            playSound('zombieInfect');
                         }
                     });
                 }
             });
+            
+            // 승자 체크 (매 프레임 한 번만)
+            if (!zombieWinnerAnnounced) {
+                const survivors = Object.keys(users).filter(id => {
+                    const u = users[id];
+                    return !zombies[id] && u && !u.isTeacher;
+                });
+                
+                if (survivors.length === 1) {
+                    zombieWinnerAnnounced = true;
+                    gameWinner = survivors[0];
+                    const winner = users[gameWinner];
+                    
+                    // 승자 공지
+                    showGameStatus(`🏆 ${winner.emoji} ${winner.name} 최후 생존!`, 3000);
+                    playSound('win');
+                    
+                    database.ref('chat').push({
+                        userId: 'system',
+                        name: '📢 공지',
+                        emoji: '📢',
+                        message: `🏆 좀비 게임 최후 생존: ${winner.emoji} ${winner.name}`,
+                        timestamp: Date.now()
+                    });
+                    playSound('announce');
+                } else if (survivors.length === 0) {
+                    zombieWinnerAnnounced = true;
+                    showGameStatus('게임 종료 - 모두 좀비가 되었습니다', 3000);
+                }
+            }
         }
         
         // 게임 상태 메시지 표시
