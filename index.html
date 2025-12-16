@@ -1510,8 +1510,12 @@
                 const nameBoxHeight = faceSize;
                 const nameBoxY = user.y + faceSize / 2; // 얼굴 바로 밑
                 
-                // 반투명 검정 직사각형 배경
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                // 이름표 배경 색상 (좀비면 빨간색, 일반은 검정색)
+                if (currentGame === 'zombie' && zombies[userId]) {
+                    ctx.fillStyle = 'rgba(220, 38, 38, 0.9)';  // 빨간색
+                } else {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';  // 검정색
+                }
                 ctx.fillRect(
                     user.x - nameBoxWidth / 2,
                     nameBoxY,
@@ -1530,15 +1534,6 @@
                 if (user.isTeacher) {
                     ctx.font = '20px Arial';
                     ctx.fillText('👑', user.x, user.y - faceSize / 2 - 10);
-                }
-                
-                // 좀비 효과
-                if (currentGame === 'zombie' && zombies[userId]) {
-                    ctx.strokeStyle = 'red';
-                    ctx.lineWidth = 3;
-                    ctx.beginPath();
-                    ctx.arc(user.x, user.y, 30, 0, Math.PI * 2);
-                    ctx.stroke();
                 }
             });
             
